@@ -1,0 +1,30 @@
+# Machine-local runtime
+.venv/
+__pycache__/
+*.py[cod]
+
+# Generated packages and temporary output
+dist/
+*.log
+*.tmp
+
+# Editor and OS metadata
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Never commit project footage or generated edit outputs if copied here
+media/
+footage/
+outputs/
+edit/
+*.mp4
+*.mov
+*.mkv
+*.avi
+*.m4v
+*.webm
+
+# Keep the bundled executable despite the general media/tool exclusions
+!scripts/bin/ffmpeg.exe
