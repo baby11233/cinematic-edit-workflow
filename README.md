@@ -1,4 +1,4 @@
-# Cinematic Edit Workflow 1.1.0
+# Cinematic Edit Workflow 1.1.1
 
 一套独立、可复制、本地运行的影视剪辑工作流，面向预筛选素材的混剪、作品集、宣传片和剧情片。
 

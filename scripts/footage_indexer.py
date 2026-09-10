@@ -23,6 +23,14 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps
 VIDEO_EXTENSIONS = {".mp4", ".mov", ".mkv", ".avi", ".m4v", ".webm", ".mts", ".m2ts"}
 
 
+def configure_console() -> None:
+    """Keep status output usable in Windows hosts with a legacy code page."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure:
+            reconfigure(encoding="utf-8", errors="replace")
+
+
 @dataclass
 class Shot:
     source_id: str
@@ -324,6 +332,7 @@ body{{margin:0;background:#0b0d12;color:#e9edf5;font:15px system-ui,"Microsoft Y
 
 
 def main() -> int:
+    configure_console()
     args = build_parser().parse_args()
     if not (0.02 <= args.interval <= 5):
         raise SystemExit("--interval 必须在 0.02 到 5 秒之间")
