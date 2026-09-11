@@ -14,6 +14,7 @@ Use the following layout as project memory. Omit artifacts that genuinely do not
 ├── similarity_notes.md
 ├── script_breakdown.md       # narrative mode
 ├── continuity_map.md         # narrative mode
+├── selection_matrix.md       # narrative mode with alternate takes or continuity tradeoffs
 ├── music_map.md              # montage mode
 ├── edl.json
 ├── verify/
@@ -45,5 +46,18 @@ Minimum EDL structure:
 ```
 
 `material_review.md` must record review coverage, literal event, subjects/environment, shot language, information, emotional effect, strong moments, candidate ranges, defects, possible uses, functional similarity, and uncertainty for every source/detected shot.
+
+When narrative selection has meaningful alternatives, `selection_matrix.md` should record one row per beat/candidate with source range, coverage function, performance or dramatic value, defect class and salience, repairability, minimum useful duration, decision, and reason. Keep value and risk in separate fields so a clean but weak take does not silently outrank a stronger repairable moment.
+
+Optional EDL fields may record evidence behind a transformation or compromise:
+
+```json
+{
+  "transform": "native|hflip|reframe|custom",
+  "selection_reason": "specific dramatic or informational gain",
+  "continuity_compromise": "none or documented visible risk",
+  "repair": "insert, reaction, action cut, mirror, crop, or custom"
+}
+```
 
 Append each work session to `project.md` with strategy, decisions and reasons, verification performed, outstanding questions, and package version.

@@ -16,9 +16,11 @@ Review is complete only when every supplied source is covered from beginning to 
 - literal beginning, middle, and ending event;
 - subjects, environment, framing, camera and subject movement, screen direction;
 - information and emotional effect;
-- strongest moments with source timecodes;
+- strongest performance, reaction, action, and information moments with source timecodes, even when the full take is unsuitable;
 - safe candidate ranges and minimum useful duration;
 - anatomy, physics, deformation, identity, flicker, exposure, compression, continuity, or transition concerns;
+- defect salience, duration, story importance, and plausible repair or coverage;
+- candidate function as speaker, listener, relationship shot, action/information insert, or neutral bridge;
 - plausible editorial functions and functionally similar alternatives;
 - review interval and any unresolved uncertainty.
 

@@ -14,9 +14,9 @@ CODEX_INDEX.md + manifest.json + shots.csv + HTML
     ↓
 material_review + usable_ranges + similarity_notes
     ↓
-混剪模式：音乐图谱          剧情模式：剧本拆解与连续性图谱
+混剪模式：音乐图谱          剧情模式：剧本拆解、连续性图谱、选材矩阵
     ↓
-项目专属策略确认
+剧情选材：表演/信息价值与瑕疵风险分离 → 覆盖与修复方案 → 项目专属策略确认
     ↓
 源时间码 EDL → 预览 → 审片 → 精修 → 最终 QC
 ```
