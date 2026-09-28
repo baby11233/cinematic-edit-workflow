@@ -2,6 +2,8 @@
 
 Preserve source files. Put generated artifacts under `<project>/edit/`. The final EDL must reference original sources and source timecodes; automatically split clips are browsing proxies unless the project explicitly adopts them as intermediates.
 
+When Jianying is the requested editor, all timeline assembly, fine cutting, sound, finishing and delivery must remain in the editable Jianying project. FFmpeg may still generate review artifacts and independently verify exported files; it must not silently replace the native timeline as the final editing backend. Follow `jianying.md` for version gates, staged patches, confirmation and project archival.
+
 Use per-segment extraction when shots need individual transforms, speed, or grade. Add short audio fades at hard segment boundaries to prevent clicks. Do not cut dialogue inside a word; use verified word boundaries and small handles when transcript timestamps may drift.
 
 For mirrored or reframed narrative coverage, verify the transformed sample before timeline-wide rendering. Inspect text, logos, watches, jewelry, garment closures, injuries, props, handedness, lighting direction, recognizable geography, headroom, skin, hands, and motion. A transform is justified only by a documented dramatic, informational, or continuity gain.

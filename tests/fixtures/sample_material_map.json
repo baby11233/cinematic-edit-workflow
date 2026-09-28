@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "materials": {
+    "SRC0001": {
+      "material_id": "material-0001",
+      "path": "E:\\sample\\take01.mp4"
+    },
+    "SRC0002": {
+      "material_id": "material-0002",
+      "path": "E:\\sample\\take02.mp4"
+    }
+  }
+}

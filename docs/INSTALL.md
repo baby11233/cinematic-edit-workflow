@@ -7,6 +7,8 @@
 - Python 3.12 x64
 - Codex Desktop 或能够读取个人 Skills 目录的 Codex 环境
 
+剪映后端另需 Windows 版剪映专业版。当前经过本地验证的版本为 `11.5.0.14471`，其内部Agent接口不是公开稳定SDK；其他版本在首次应用补丁前必须重新执行非修改性验证。没有剪映时仍可生成补丁计划，但不得宣称已验证或已应用。
+
 项目内置 FFmpeg，因此不要求系统 PATH 中存在 FFmpeg。Python 包默认从 `vendor/wheels` 离线安装，不依赖安装时访问 GitHub或 PyPI。
 
 ## 在另一台电脑复刻

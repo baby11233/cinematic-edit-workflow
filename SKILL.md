@@ -1,6 +1,6 @@
 ---
 name: cinematic-edit-workflow
-description: Locally index, deeply review, edit, finish, and verify pre-curated visual footage for montage, portfolio, promotional, or narrative films. Use when dense 0.3/0.2-second visual understanding and persistent project memory must drive the edit. Independent of video-use; do not use for ordinary transcript-first talking-head editing.
+description: Locally index, deeply review, edit, finish, and verify pre-curated visual footage for montage, portfolio, promotional, or narrative films, including editable Jianying Professional projects when explicitly requested. Use when dense 0.3/0.2-second visual understanding and persistent project memory must drive the edit. Independent of video-use; do not use for ordinary transcript-first talking-head editing.
 ---
 
 # Cinematic Edit Workflow
@@ -17,6 +17,7 @@ Determine the editorial mode from the actual project:
 - For scripted or dramatic continuity editing, read [references/narrative.md](references/narrative.md). A screenplay, outline, or explicit scene intent is normally required; music is not required for the assembly cut. When alternate takes, generated coverage, eyeline conflicts, or continuity defects affect selection, also read [references/performance-first-selection.md](references/performance-first-selection.md).
 - For every project, read [references/review-and-index.md](references/review-and-index.md) before inspecting footage and [references/production.md](references/production.md) before rendering.
 - Read [references/schemas.md](references/schemas.md) when creating cached review records or the EDL.
+- When the user explicitly chooses Jianying Professional or requires an editable Jianying project, read [references/jianying.md](references/jianying.md) before creating the EDL or changing the timeline. Use Jianying as the only timeline and delivery application; retain FFmpeg only for indexing and independent verification.
 
 ## Required gates
 
@@ -25,7 +26,7 @@ Determine the editorial mode from the actual project:
 3. Persist what each shot literally contains, communicates, and can safely contribute. Keep technical usability separate from artistic suitability.
 4. Build the project-specific editorial strategy from the material, script or soundtrack, and requested outcome. In narrative work, keep dramatic value separate from defect risk and select beat-level moments before rejecting an entire take. Do not reuse the arc, shot order, pacing, grade, titles, or packaging of a previous project.
 5. Present the strategy in plain language and obtain approval before creating an EDL or changing a timeline.
-6. Create a source-timecode EDL, render a lightweight preview, inspect the rendered output, iterate, then finish and verify the delivery.
+6. Create a source-timecode EDL, execute it through the chosen editing backend, render a lightweight preview, inspect the rendered output, iterate, then finish and verify the delivery. For Jianying, compile and validate narrow revision-aware patch stages; never edit draft JSON or bypass host authorization and PC confirmation.
 
 ## Independence boundary
 
@@ -33,4 +34,4 @@ The package version is recorded in `VERSION`. Do not automatically merge changes
 
 ## Completion
 
-Do not claim completion from successful commands alone. Delivery requires visual inspection, audio checks appropriate to available stems, full decode verification, confirmed dimensions/frame rate/duration, and a persisted project log.
+Do not claim completion from successful commands alone. Delivery requires visual inspection, audio checks appropriate to available stems, full decode verification, confirmed dimensions/frame rate/duration, and a persisted project log. When a native editor is used, also preserve its version, operation history, export settings, and a recoverable editable project milestone.

@@ -1,4 +1,4 @@
-# Cinematic Edit Workflow 1.2.0
+# Cinematic Edit Workflow 1.3.0
 
 一套独立、可复制、本地运行的影视剪辑工作流，面向预筛选素材的混剪、作品集、宣传片和剧情片。
 
@@ -17,6 +17,8 @@
 - 对多 take 与 AI 抽卡素材执行表演优先的微区间选材，并独立评估瑕疵显著性与修复成本；
 - 用说话者、倾听者、双人关系、信息插入和中性桥接构建覆盖剪辑，必要时验证低风险镜像或重构；
 - 保存审核、EDL、验证和项目决策，避免重复读取素材。
+- 当用户明确选择剪映专业版时，将EDL编译为可验证的剪映11.5装配补丁计划，在授权宿主和PC确认下落入可编辑工程；
+- 将剪映时间线执行、预览、精修、导出和完整草稿归档纳入同一套质量门槛。
 
 运行期间不上传视频、不调用云端识别服务。首次部署也可以使用随包保存的离线 Python wheels。
 
@@ -64,6 +66,31 @@ Codex 读取顺序：
 使用 $cinematic-edit-workflow 剪辑这个项目，素材在……
 ```
 
+## 剪映专业版后端
+
+明确要求使用剪映时，原有审片、表演优先选材、连续性判断和EDL仍是决策源；剪映成为唯一时间线和成片输出端，FFmpeg只负责索引与独立QC。
+
+当前已验证环境：
+
+```text
+剪映专业版 11.5.0.14471
+jianying-agent-cli 0.1.0
+```
+
+先在目标剪映工程中导入原始素材并取得真实的项目、草稿、revision和material id，再生成装配补丁：
+
+```powershell
+& ".\scripts\run_jianying_patch.ps1" `
+  -Edl "E:\项目\edit\edl.json" `
+  -MaterialMap "E:\项目\edit\jianying\material_map.json" `
+  -Output "E:\项目\edit\jianying\patches\02_assembly.json" `
+  -ProjectId "真实项目ID" `
+  -DraftRef "真实草稿Ref" `
+  -BaseRevision 0
+```
+
+工具只生成并验证计划，不写草稿、不绕过授权，也不自动确认应用。详细流程见 [references/jianying.md](references/jianying.md)。
+
 ## 项目结构
 
 ```text
@@ -79,6 +106,9 @@ cinematic-edit-workflow/
 ├── references/
 ├── scripts/
 │   ├── footage_indexer.py
+│   ├── jianying_patch_compiler.py
+│   ├── run_jianying_patch.ps1
 │   └── bin/ffmpeg.exe
+├── tests/
 └── vendor/wheels/
 ```

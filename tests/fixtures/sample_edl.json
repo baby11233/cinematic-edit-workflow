@@ -1,0 +1,28 @@
+{
+  "version": 2,
+  "mode": "narrative",
+  "sources": {
+    "SRC0001": "E:\\sample\\take01.mp4",
+    "SRC0002": "E:\\sample\\take02.mp4"
+  },
+  "ranges": [
+    {
+      "id": "shot-0001",
+      "source": "SRC0001",
+      "start": 1.25,
+      "end": 2.5,
+      "video_track": "V1",
+      "role": "speaker"
+    },
+    {
+      "id": "shot-0002",
+      "source": "SRC0002",
+      "source_in_us": 500000,
+      "source_out_us": 1250000,
+      "record_in_us": 250000,
+      "video_track": "V2",
+      "role": "listener reaction",
+      "transform": "reframe"
+    }
+  ]
+}
