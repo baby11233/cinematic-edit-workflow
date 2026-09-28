@@ -13,11 +13,7 @@
 
 ## 在另一台电脑复刻
 
-1. 将整个 `cinematic-edit-workflow` 文件夹复制到任意固定目录，推荐：
-
-   ```text
-   D:\AI\codex\cinematic-edit-workflow
-   ```
+1. 将整个 `cinematic-edit-workflow` 文件夹复制或克隆到任意本地固定目录。项目不要求特定盘符、父目录或用户名。
 
 2. 安装 Python 3.12 x64。如果机器安装了 Codex Desktop，安装程序也会尝试寻找 Codex 自带的 Python 3.12 运行时。
 3. 在项目目录打开 PowerShell：
@@ -37,10 +33,14 @@
 
 ## 指定 Python 或 Codex Home
 
+只有自动检测失败或需要使用非默认 Codex Home 时才需要指定这些参数：
+
 ```powershell
+$PythonPath = Read-Host "请输入 Python 3.12 x64 可执行文件路径"
+$CodexHome = Read-Host "请输入 Codex Home 目录"
 .\install.ps1 `
-  -PythonPath "C:\Python312\python.exe" `
-  -CodexHome "C:\Users\用户名\.codex"
+  -PythonPath $PythonPath `
+  -CodexHome $CodexHome
 ```
 
 ## 安装模型
@@ -58,14 +58,20 @@
 ## 运行
 
 ```powershell
-.\run.ps1 "E:\素材目录"
+$FootagePath = Read-Host "请输入素材目录"
+.\run.ps1 $FootagePath
 ```
 
 附加参数会原样传给索引器，例如：
 
 ```powershell
-.\run.ps1 "E:\素材目录" --interval 0.2 --min-scene-len 0.7 --workers 3
+$FootagePath = Read-Host "请输入素材目录"
+$ProjectPath = Read-Host "请输入项目工作目录"
+$IndexPath = Join-Path $ProjectPath "edit\footage_index"
+.\run.ps1 $FootagePath --output-dir $IndexPath --interval 0.2 --min-scene-len 0.7 --workers 3
 ```
+
+素材目录、项目工作目录和仓库目录可以彼此独立。若省略 `--output-dir`，索引默认写入素材目录下的 `edit\footage_index`；指定该参数后，索引和代理文件写入所选项目工作区。
 
 ## 卸载
 

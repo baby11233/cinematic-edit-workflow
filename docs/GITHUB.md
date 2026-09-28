@@ -1,6 +1,6 @@
-# 私有 GitHub 仓库
+# GitHub 发布与同步
 
-本项目建议只存放在 GitHub Private 仓库中。
+本项目可存放在公开或私有 GitHub 仓库中。仓库可见性取决于协作需求；无论选择哪一种，都不要提交素材、成片、项目输出或凭据。
 
 ## 上传内容
 
@@ -22,9 +22,11 @@
 
 ```powershell
 git lfs install
-git clone <private-repository-url>
-cd cinematic-edit-workflow
+$RepositoryUrl = Read-Host "请输入仓库 URL"
+$LocalDirectory = Read-Host "请输入本地安装目录"
+git clone $RepositoryUrl $LocalDirectory
+Set-Location $LocalDirectory
 .\install.ps1
 ```
 
-私有仓库仍属于云端存储。只有仓库所有者、明确添加的协作者以及授权应用可以访问；不要把访问Token写入项目文件。
+公开仓库允许任何人读取代码；私有仓库只允许仓库所有者、明确添加的协作者以及授权应用访问。两者都属于云端存储，不要把访问 Token 写入项目文件。

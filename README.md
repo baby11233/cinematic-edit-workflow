@@ -56,6 +56,19 @@
 - 保存可复用的剪辑方案、EDL、QC 结果与项目决策；
 - 在明确选择剪映专业版时，将 EDL 编译为经过验证的剪映 11.5 装配计划，并把可编辑工程归档纳入交付。
 
+## 目录约定与可移植性
+
+项目不绑定盘符、用户名或固定文件夹。说明中的路径均应理解为运行时参数，而不是必须照搬的目录结构：
+
+- **仓库目录**：本项目代码所在位置，可以放在任意本地固定目录；
+- **素材目录**：原始视频和音频所在位置，可以位于其他磁盘或外接存储；
+- **项目目录**：保存审核、EDL、预览、QC 和编辑工程的工作区；
+- **输出目录**：默认可放在素材目录下，也可以通过 `--output-dir` 指向项目目录中的任意位置。
+
+仓库、素材和项目输出可以位于三个不同位置。脚本通过自身位置寻找内置程序，通过传入参数寻找素材和输出，不依赖当前机器上的示例盘符。
+
+这里的可移植性指 Windows 电脑之间以及不同目录布局之间的迁移；当前安装脚本、内置二进制和剪映后端仍以 Windows x64 为运行边界。
+
 ## 快速开始
 
 ### 1. 安装
@@ -67,15 +80,25 @@ Set-ExecutionPolicy -Scope Process Bypass
 & ".\install.ps1"
 ```
 
-安装程序会检查 Windows x64、Python 3.12 和内置 FFmpeg，在项目下创建 `.venv`，从 `vendor/wheels` 离线安装固定版本依赖，并将本项目 Skill 链接到当前 Codex Home。完整说明见 [安装文档](docs/INSTALL.md)。
+安装程序会检查 Windows x64、Python 3.12 和内置 FFmpeg，在仓库下创建 `.venv`，从 `vendor/wheels` 离线安装固定版本依赖，并将本项目 Skill 链接到当前 Codex Home。仓库可位于任意固定目录，完整说明见 [安装文档](docs/INSTALL.md)。
 
 ### 2. 建立素材索引
 
 ```powershell
-& ".\run.ps1" "E:\项目\素材"
+$FootagePath = Read-Host "请输入素材目录"
+& ".\run.ps1" $FootagePath
 ```
 
-默认输出到 `E:\项目\素材\edit\footage_index\`。建议按以下顺序读取：
+默认输出到素材目录下的 `edit\footage_index`。如果希望素材与项目产物分开存放，可显式指定输出位置：
+
+```powershell
+$FootagePath = Read-Host "请输入素材目录"
+$ProjectPath = Read-Host "请输入项目工作目录"
+$IndexPath = Join-Path $ProjectPath "edit\footage_index"
+& ".\run.ps1" $FootagePath --output-dir $IndexPath
+```
+
+建议按以下顺序读取索引：
 
 1. `CODEX_INDEX.md`
 2. `manifest.json` 或 `shots.csv`
@@ -85,7 +108,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 ### 3. 在 Codex 中调用
 
 ```text
-使用 $cinematic-edit-workflow 剪辑这个项目，素材在 E:\项目\素材，参考剧本在……
+使用 $cinematic-edit-workflow 剪辑这个项目。素材目录是 <素材目录>，项目工作目录是 <项目目录>，参考剧本是 <剧本路径>。
 ```
 
 Skill 会根据素材类型选择剧情或混剪路径，并把后续判断写回项目目录。详细执行规范位于 [SKILL.md](SKILL.md)。
@@ -108,10 +131,12 @@ jianying-agent-cli 0.1.0
 先在目标剪映工程中导入原始素材并取得真实的 project、draft、revision 与 material id，再生成装配计划：
 
 ```powershell
+$ProjectPath = Read-Host "请输入项目工作目录"
+$EditPath = Join-Path $ProjectPath "edit"
 & ".\scripts\run_jianying_patch.ps1" `
-  -Edl "E:\项目\edit\edl.json" `
-  -MaterialMap "E:\项目\edit\jianying\material_map.json" `
-  -Output "E:\项目\edit\jianying\patches\02_assembly.json" `
+  -Edl (Join-Path $EditPath "edl.json") `
+  -MaterialMap (Join-Path $EditPath "jianying\material_map.json") `
+  -Output (Join-Path $EditPath "jianying\patches\02_assembly.json") `
   -ProjectId "真实项目ID" `
   -DraftRef "真实草稿Ref" `
   -BaseRevision 0
