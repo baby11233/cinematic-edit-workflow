@@ -83,3 +83,13 @@ After apply, compare actual tracks, clip count, source ranges, record positions 
 ## Archive
 
 After each picture lock and final delivery, close the draft editor and preserve the complete Jianying project through the application's supported local/cloud mechanism plus a local archive when accessible. Record app version, project id, timeline name, material manifest, patch history, export settings, validation results and final media checks. Cloud sync alone is not the project record.
+
+## macOS
+
+The backend above was proven only on Windows (Jianying Professional 11.5.0.14471, agent CLI 0.1.0). `scripts/run_jianying_patch.ps1` looks for `jianying-agent-cli.exe` under `%LOCALAPPDATA%\JianyingPro`; no macOS equivalent has been verified, and this repository does not assume that the macOS app ships the same agent interface, patch schema or authorization model.
+
+On macOS:
+
+- `scripts/jianying_patch_compiler.py` still runs (pure Python) and can generate a patch plan, but treat it as **unvalidated** until a macOS agent CLI is located and a non-mutating `validate-patch` probe returns `ok: true`. Do not claim it applicable before that.
+- Without a validated agent, use the fallback in "Failure and fallback": deliver the timeline map, SRT and reference preview for in-app reconstruction, or switch to the DaVinci backend (`davinci.md`), which is the recommended macOS path.
+- If you do find a macOS agent CLI, pass it with `--validate-cli <path>` and record its version in `jianying/app-version.txt` and `upstream-evaluation.md` before first use.

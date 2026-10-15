@@ -1,4 +1,4 @@
-# Cinematic Edit Workflow 1.3.0
+# Cinematic Edit Workflow 1.4.0
 
 一套面向 **AI 生成素材、多 take 素材和连续剧情素材** 的本地影视剪辑工作流。它把“先看懂素材，再做剪辑决定”固化为可复用的 Codex Skill：高密度审片、表演优先选材、源时间码 EDL、持续项目记忆、时间线执行与成片 QC 都有明确产物和质量门槛。
 
@@ -67,13 +67,20 @@
 
 仓库、素材和项目输出可以位于三个不同位置。脚本通过自身位置寻找内置程序，通过传入参数寻找素材和输出，不依赖当前机器上的示例盘符。
 
-这里的可移植性指 Windows 电脑之间以及不同目录布局之间的迁移；当前安装脚本、内置二进制和剪映后端仍以 Windows x64 为运行边界。
+1.4.0 起支持 **Windows x64** 与 **macOS（Apple Silicon / Intel）**。索引器、EDL 导出器、QC 和达芬奇后端两个系统通用；剪映 Agent 后端仍只在 Windows 上验证过。素材身份由内容指纹决定，同一个项目可在两个系统之间迁移（见 [macOS 安装](docs/INSTALL-macOS.md)）。
 
 ## 快速开始
 
 ### 1. 安装
 
-在 Windows PowerShell 中运行：
+**macOS**（需先 `brew install python@3.12 ffmpeg`）：
+
+```bash
+./install.sh
+./run.sh /path/to/footage
+```
+
+**Windows**，在 PowerShell 中运行：
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
@@ -113,11 +120,22 @@ $IndexPath = Join-Path $ProjectPath "edit\footage_index"
 
 Skill 会根据素材类型选择剧情或混剪路径，并把后续判断写回项目目录。详细执行规范位于 [SKILL.md](SKILL.md)。
 
-## 两种时间线执行方式
+## 三种时间线执行方式
 
 ### 通用本地流程
 
 适合自动化装配、预览输出和独立质量检查。FFmpeg 负责素材索引、代理生成、技术检测及成片 QC；剪辑决定始终来自审核记录和源时间码 EDL，而不是场景检测结果本身。
+
+### 达芬奇（DaVinci Resolve）流程
+
+Windows 与 macOS 通用，Free 与 Studio 均可。EDL 导出为 FCPXML 1.9（多轨）和 CMX3600（仅 V1），在 Resolve 中手动导入并做导入核对，不依赖 Resolve 脚本 API：
+
+```bash
+.venv/bin/python scripts/edl_export.py <项目>/edit/edl.json --out-dir <项目>/edit/davinci \
+  --manifest <项目>/edit/footage_index/manifest.json --path-map "E:/footage=/Volumes/SSD/footage"
+```
+
+> 导出器已通过单元测试和 XML 良构检查，**尚未在真实 Resolve 上验证导入**，首次使用请先用几个片段试导入。详见 [达芬奇工作流](references/davinci.md)。
 
 ### 剪映专业版 11.5 流程
 
@@ -169,6 +187,9 @@ $EditPath = Join-Path $ProjectPath "edit"
 - [制作、混音与交付](references/production.md)
 - [数据结构与 EDL](references/schemas.md)
 - [剪映专业版工作流](references/jianying.md)
+- [达芬奇工作流](references/davinci.md)
+- [macOS 安装](docs/INSTALL-macOS.md)
+- [1.4.0 优化记录与待决建议](docs/OPTIMIZATION.md)
 
 ## 项目结构
 
@@ -177,15 +198,17 @@ cinematic-edit-workflow/
 ├── SKILL.md
 ├── VERSION
 ├── README.md
-├── install.ps1
-├── run.ps1
-├── verify.ps1
+├── install.ps1 / install.sh
+├── run.ps1 / run.sh
+├── verify.ps1 / verify.sh
 ├── agents/
 ├── docs/
 ├── references/
 ├── scripts/
 │   ├── footage_indexer.py
 │   ├── jianying_patch_compiler.py
+│   ├── edl_export.py        # EDL -> FCPXML / CMX3600 (DaVinci)
+│   ├── qc.py                # delivery QC
 │   ├── run_jianying_patch.ps1
 │   └── bin/ffmpeg.exe
 ├── tests/
@@ -194,9 +217,9 @@ cinematic-edit-workflow/
 
 ## 当前状态
 
-- 版本：`1.3.0`
-- 平台：Windows x64
-- 默认运行时：Python 3.12
+- 版本：`1.4.0`
+- 平台：Windows x64、macOS（新增，开发于 Windows，需在 Mac 上跑一遍 `verify.sh` 确认）
+- 默认运行时：Python 3.12（macOS 接受 3.10+）
 - 剪映后端：针对 11.5.0.14471 验证，其他版本需重新做接口探测与安全验证
 - 原始 1.2.0 版本已保存在 Git tag `backup-pre-jianying-20260928`
 

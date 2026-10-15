@@ -2,6 +2,8 @@
 
 Preserve source files. Put generated artifacts under `<project>/edit/`. The final EDL must reference original sources and source timecodes; automatically split clips are browsing proxies unless the project explicitly adopts them as intermediates.
 
+When DaVinci Resolve is the requested editor, the same rule applies: assemble and finish inside Resolve (see `davinci.md`), never replace the native timeline with an FFmpeg assembly.
+
 When Jianying is the requested editor, all timeline assembly, fine cutting, sound, finishing and delivery must remain in the editable Jianying project. FFmpeg may still generate review artifacts and independently verify exported files; it must not silently replace the native timeline as the final editing backend. Follow `jianying.md` for version gates, staged patches, confirmation and project archival.
 
 Use per-segment extraction when shots need individual transforms, speed, or grade. Add short audio fades at hard segment boundaries to prevent clicks. Do not cut dialogue inside a word; use verified word boundaries and small handles when transcript timestamps may drift.
@@ -13,6 +15,8 @@ Apply subtitles after visual overlays so graphics cannot hide them. Shift timed 
 Before a full render, test global effects, framing, titles, transitions, and color treatments on representative short samples. Inspect skin, highlights, blacks, motion, safe areas, and existing branding.
 
 Distinguish mixing from mastering. Independent dialogue/music/ambience/effects balance requires separate stems. With only a stereo master, report the work as mastering or enhancement.
+
+Run `scripts/qc.py <file> --expect-width W --expect-height H --expect-fps F [--target-lufs L]` first. It automates the decode, black/freeze/silence, loudness and true-peak items below and writes `*.qc.json`; every finding needs a disposition, and the visual items still require human or model inspection.
 
 Rendered-output QC must include:
 

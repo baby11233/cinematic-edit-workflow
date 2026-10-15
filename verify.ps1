@@ -13,6 +13,8 @@ $required = @(
     (Join-Path $projectRoot "VERSION"),
     (Join-Path $projectRoot "scripts\footage_indexer.py"),
     (Join-Path $projectRoot "scripts\jianying_patch_compiler.py"),
+    (Join-Path $projectRoot "scripts\edl_export.py"),
+    (Join-Path $projectRoot "scripts\qc.py"),
     (Join-Path $projectRoot "references\jianying.md"),
     $ffmpegPath,
     $pythonPath
@@ -29,6 +31,10 @@ if ($LASTEXITCODE -ne 0) { throw "FFmpeg验证失败。" }
 if ($LASTEXITCODE -ne 0) { throw "索引器启动验证失败。" }
 & $pythonPath (Join-Path $projectRoot "scripts\jianying_patch_compiler.py") --help | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "剪映补丁编译器启动验证失败。" }
+& $pythonPath (Join-Path $projectRoot "scripts\edl_export.py") --help | Out-Null
+if ($LASTEXITCODE -ne 0) { throw "EDL导出器启动验证失败。" }
+& $pythonPath (Join-Path $projectRoot "scripts\qc.py") --help | Out-Null
+if ($LASTEXITCODE -ne 0) { throw "QC工具启动验证失败。" }
 & $pythonPath -m unittest discover -s (Join-Path $projectRoot "tests") -p "test_*.py"
 if ($LASTEXITCODE -ne 0) { throw "测试失败。" }
 if (-not (Test-Path -LiteralPath $skillLink)) { throw "Codex Skill未注册：$skillLink" }

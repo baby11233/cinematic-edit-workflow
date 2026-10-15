@@ -114,7 +114,7 @@ def compile_patch(
         for index, track_id in enumerate(tracks)
     ]
 
-    sequence_cursor_us = 0
+    track_cursors: dict[str, int] = {}
     for index, item in enumerate(ranges):
         source_id = item.get("source")
         if not isinstance(source_id, str) or not source_id:
@@ -134,9 +134,10 @@ def compile_patch(
             "record_in_us",
             ("record_in_seconds", "record_start", "output_start"),
         )
-        if record_in_us is None:
-            record_in_us = sequence_cursor_us
-        sequence_cursor_us = max(sequence_cursor_us, record_in_us + duration_us)
+        track_key = item.get("video_track") or item.get("track") or "V1"
+        if record_in_us is None:  # per-track: an overlay must not push the main track
+            record_in_us = track_cursors.get(track_key, 0)
+        track_cursors[track_key] = max(track_cursors.get(track_key, 0), record_in_us + duration_us)
 
         clip_id = item.get("id") or f"shot-{index + 1:04d}"
         if not isinstance(clip_id, str) or not clip_id:

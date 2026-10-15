@@ -1,4 +1,6 @@
-# 安装与复刻
+# 安装与复刻（Windows）
+
+macOS 请看 [INSTALL-macOS.md](INSTALL-macOS.md)。
 
 ## 支持环境
 

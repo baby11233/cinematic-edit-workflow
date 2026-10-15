@@ -7,6 +7,7 @@ Use the following layout as project memory. Omit artifacts that genuinely do not
 ├── footage_index/
 │   ├── CODEX_INDEX.md
 │   ├── manifest.json
+│   ├── source_registry.json   # fingerprint -> SRC id, append-only; never edit by hand
 │   ├── shots.csv
 │   └── sources/
 ├── material_review.md
@@ -17,6 +18,10 @@ Use the following layout as project memory. Omit artifacts that genuinely do not
 ├── selection_matrix.md       # narrative mode with alternate takes or continuity tradeoffs
 ├── music_map.md              # montage mode
 ├── edl.json
+├── davinci/                  # when DaVinci Resolve is the requested editor
+│   ├── <edl>.fcpxml
+│   ├── <edl>.edl
+│   └── import_check.md
 ├── jianying/                 # when Jianying is the requested editor
 │   ├── material_map.json
 │   ├── patches/
@@ -25,7 +30,7 @@ Use the following layout as project memory. Omit artifacts that genuinely do not
 │   ├── export_settings.md
 │   ├── app-version.txt
 │   └── project-archive/
-├── verify/
+├── verify/                   # includes *.qc.json from scripts/qc.py
 ├── preview.mp4
 ├── final.mp4
 └── project.md
@@ -98,3 +103,7 @@ Optional EDL fields may record evidence behind a transformation or compromise:
 ```
 
 Append each work session to `project.md` with strategy, decisions and reasons, verification performed, outstanding questions, and package version.
+
+`SRC` identifiers are stable: `source_registry.json` maps a content fingerprint (size + head + tail bytes) to its id and only ever appends. Adding, removing or moving footage never renumbers existing sources, so an EDL written earlier keeps pointing at the same media. EDL `sources` paths are authoring-machine paths; on another machine remap them at export time with `edl_export.py --path-map` rather than editing the EDL.
+
+Without an explicit `record_in*`, a range is appended after the previous range **on the same track**.

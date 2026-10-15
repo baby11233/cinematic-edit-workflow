@@ -61,6 +61,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--threshold", type=float)
     p.add_argument("--min-scene-len", type=float, default=0.5)
     p.add_argument("--split-mode", choices=("encode", "copy", "none"), default="encode")
+    p.add_argument("--encoder", choices=("auto", "libx264", "h264_videotoolbox", "h264_nvenc", "h264_qsv"),
+                   default="auto", help="Encoder for browse clips (auto: hardware when available).")
     p.add_argument("--ffmpeg", default="ffmpeg")
     p.add_argument("--ffprobe", default="ffprobe")
     p.add_argument("--force", action="store_true")
@@ -79,7 +81,36 @@ def resolve_binary(value: str, names: tuple[str, ...], root: Path) -> str | None
         for path in (app_dir / "bin" / name, root / name, root / "bin" / name):
             if path.is_file():
                 return str(path.resolve())
+    # GUI-launched hosts on macOS often lack Homebrew in PATH.
+    for prefix in ("/opt/homebrew/bin", "/usr/local/bin"):
+        for name in names:
+            path = Path(prefix) / name
+            if path.is_file():
+                return str(path)
     return None
+
+
+def sibling_ffprobe(ffmpeg: str) -> str | None:
+    """Find ffprobe next to a resolved ffmpeg binary."""
+    directory = Path(ffmpeg).parent
+    for name in ("ffprobe.exe", "ffprobe"):
+        if (directory / name).is_file():
+            return str(directory / name)
+    return None
+
+
+def pick_encoder(ffmpeg: str, requested: str) -> str:
+    if requested != "auto":
+        return requested
+    try:
+        listing = run([ffmpeg, "-hide_banner", "-encoders"], capture=True).stdout
+    except (subprocess.CalledProcessError, OSError):
+        return "libx264"
+    order = ("h264_videotoolbox",) if sys.platform == "darwin" else ("h264_nvenc", "h264_qsv")
+    for name in order:
+        if name in listing:
+            return name
+    return "libx264"
 
 
 def run(command: list[str], *, capture: bool = False) -> subprocess.CompletedProcess[str]:
@@ -97,13 +128,30 @@ def discover(root: Path, output: Path) -> list[Path]:
 
 
 def fingerprint(path: Path) -> str:
-    stat = path.stat()
+    """Content-based identity (size + head + tail). Independent of path and mtime so a
+    footage folder can move between drives or between Windows and macOS."""
+    size = path.stat().st_size
     digest = hashlib.sha256()
-    digest.update(str(path.resolve()).encode("utf-8"))
-    digest.update(f"|{stat.st_size}|{stat.st_mtime_ns}".encode())
+    digest.update(f"{size}|".encode())
     with path.open("rb") as handle:
         digest.update(handle.read(1024 * 1024))
+        if size > 2 * 1024 * 1024:
+            handle.seek(-1024 * 1024, os.SEEK_END)
+            digest.update(handle.read(1024 * 1024))
     return digest.hexdigest()
+
+
+def load_registry(output: Path) -> dict[str, str]:
+    path = output / "source_registry.json"
+    return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+
+
+def assign_source_id(registry: dict[str, str], sig: str) -> str:
+    """Append-only: a source keeps its SRC id forever, so EDLs never silently re-point."""
+    if sig not in registry:
+        used = [int(v[3:]) for v in registry.values()]
+        registry[sig] = f"SRC{(max(used) if used else 0) + 1:04d}"
+    return registry[sig]
 
 
 def seconds_to_tc(value: float, filename: bool = False) -> str:
@@ -182,7 +230,8 @@ def detect_scenes(path: Path, duration: float, detector: str, threshold: float |
     return merged
 
 
-def split_clip(ffmpeg: str, source: Path, destination: Path, start: float, duration: float, mode: str) -> None:
+def split_clip(ffmpeg: str, source: Path, destination: Path, start: float, duration: float, mode: str,
+               encoder: str = "libx264") -> None:
     if mode == "none":
         return
     destination.parent.mkdir(parents=True, exist_ok=True)
@@ -191,8 +240,11 @@ def split_clip(ffmpeg: str, source: Path, destination: Path, start: float, durat
     if mode == "copy":
         command = base + ["-c", "copy", "-avoid_negative_ts", "make_zero", str(destination)]
     else:
-        command = base + ["-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
-                          "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", str(destination)]
+        if encoder == "libx264":
+            video = ["-c:v", "libx264", "-preset", "veryfast", "-crf", "18"]
+        else:  # hardware encoders: browse proxies only, so bitrate-based quality is fine
+            video = ["-c:v", encoder, "-b:v", "12M", "-pix_fmt", "yuv420p"]
+        command = base + video + ["-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", str(destination)]
     run(command)
 
 
@@ -218,8 +270,12 @@ def extract_frames(ffmpeg: str, source: Path, frame_dir: Path, start: float, dur
 
 
 def font(size: int) -> ImageFont.ImageFont:
-    candidates = [Path(os.environ.get("WINDIR", "C:/Windows")) / "Fonts" / "msyh.ttc",
-                  Path(os.environ.get("WINDIR", "C:/Windows")) / "Fonts" / "arial.ttf"]
+    windir = Path(os.environ.get("WINDIR", "C:/Windows")) / "Fonts"
+    candidates = [windir / "msyh.ttc", windir / "arial.ttf",
+                  Path("/System/Library/Fonts/PingFang.ttc"),
+                  Path("/System/Library/Fonts/Helvetica.ttc"),
+                  Path("/System/Library/Fonts/Supplemental/Arial Unicode.ttf"),
+                  Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")]
     for item in candidates:
         if item.is_file():
             return ImageFont.truetype(str(item), size)
@@ -261,9 +317,8 @@ def make_sheets(frames: list[Path], output_dir: Path, source_name: str, shot_id:
     return outputs
 
 
-def process_source(index: int, source: Path, output: Path, args: argparse.Namespace,
-                   ffmpeg: str, ffprobe: str | None) -> dict[str, Any]:
-    source_id = f"SRC{index:04d}"
+def process_source(source_id: str, source: Path, output: Path, args: argparse.Namespace,
+                   ffmpeg: str, ffprobe: str | None, encoder: str, sig: str) -> dict[str, Any]:
     source_dir = output / "sources" / source_id
     clips_dir, sheets_dir = source_dir / "clips", source_dir / "sheets"
     metadata = probe(source, ffprobe, ffmpeg)
@@ -273,7 +328,7 @@ def process_source(index: int, source: Path, output: Path, args: argparse.Namesp
         shot_id = f"{source_id}_SH{shot_number:04d}"
         clip_name = f"{shot_id}_{seconds_to_tc(start, True)}_{seconds_to_tc(end, True)}.mp4"
         clip_path = clips_dir / clip_name
-        split_clip(ffmpeg, source, clip_path, start, end - start, args.split_mode)
+        split_clip(ffmpeg, source, clip_path, start, end - start, args.split_mode, encoder)
         temp_frames = source_dir / ".frames" / shot_id
         frames = extract_frames(ffmpeg, source, temp_frames, start, end - start, args.interval, args.thumb_width)
         sheets = make_sheets(frames, sheets_dir / shot_id, source.name, shot_id, start,
@@ -281,18 +336,14 @@ def process_source(index: int, source: Path, output: Path, args: argparse.Namesp
         shutil.rmtree(temp_frames, ignore_errors=True)
         shots.append(Shot(source_id, shot_id, str(source), source.name, start, end, end - start,
                           seconds_to_tc(start), seconds_to_tc(end),
-                          str(clip_path) if args.split_mode != "none" else None,
-                          [str(p) for p in sheets], len(frames)))
+                          clip_path.relative_to(output).as_posix() if args.split_mode != "none" else None,
+                          [p.relative_to(output).as_posix() for p in sheets], len(frames)))
     payload = {"source_id": source_id, "source_path": str(source), "source_name": source.name,
-               "fingerprint": fingerprint(source), "metadata": metadata,
+               "fingerprint": sig, "metadata": metadata,
                "detector": args.detector, "shots": [asdict(s) for s in shots]}
     source_dir.mkdir(parents=True, exist_ok=True)
     (source_dir / "shots.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     return payload
-
-
-def relative(path: str | Path, root: Path) -> str:
-    return Path(path).resolve().relative_to(root.resolve()).as_posix()
 
 
 def write_outputs(output: Path, root: Path, sources: list[dict[str, Any]], args: argparse.Namespace) -> None:
@@ -322,8 +373,8 @@ def write_outputs(output: Path, root: Path, sources: list[dict[str, Any]], args:
     (output / "CODEX_INDEX.md").write_text("\n".join(md) + "\n", encoding="utf-8")
     cards = []
     for shot in all_shots:
-        sheet_links = "".join(f'<a href="{html.escape(relative(p, output))}"><img loading="lazy" src="{html.escape(relative(p, output))}"></a>' for p in shot["sheets"])
-        clip = f'<video controls preload="none" src="{html.escape(relative(shot["clip_path"], output))}"></video>' if shot["clip_path"] else ""
+        sheet_links = "".join(f'<a href="{html.escape(p)}"><img loading="lazy" src="{html.escape(p)}"></a>' for p in shot["sheets"])
+        clip = f'<video controls preload="none" src="{html.escape(shot["clip_path"])}"></video>' if shot["clip_path"] else ""
         cards.append(f'<article><h2>{shot["shot_id"]}</h2><p>{html.escape(shot["source_name"])} · {shot["start_timecode"]} → {shot["end_timecode"]} · {shot["duration"]:.3f}s</p>{clip}<div class="sheets">{sheet_links}</div></article>')
     page = f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Footage Index</title><style>
 body{{margin:0;background:#0b0d12;color:#e9edf5;font:15px system-ui,"Microsoft YaHei";padding:24px}}header{{position:sticky;top:0;background:#0b0d12ee;padding:8px 0 18px;z-index:2}}article{{border-top:1px solid #293040;padding:20px 0}}h1,h2{{margin:0 0 8px}}p{{color:#aeb8ca}}video{{width:min(720px,100%);display:block;margin:12px 0}}.sheets{{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:12px}}img{{width:100%;display:block;border:1px solid #30384a}}
@@ -343,36 +394,45 @@ def main() -> int:
     output.mkdir(parents=True, exist_ok=True)
     ffmpeg = resolve_binary(args.ffmpeg, ("ffmpeg.exe", "ffmpeg"), root)
     ffprobe = resolve_binary(args.ffprobe, ("ffprobe.exe", "ffprobe"), root)
+    if not ffprobe and ffmpeg:
+        ffprobe = sibling_ffprobe(ffmpeg)
     if not ffmpeg:
         raise SystemExit("找不到 FFmpeg。请安装 FFmpeg 或使用 --ffmpeg 指定绝对路径。")
     videos = discover(root, output)
     if not videos:
         raise SystemExit("指定目录中没有发现视频素材。")
+    encoder = pick_encoder(ffmpeg, args.encoder)
+    print(f"[编码器] {encoder}")
     cache_path = output / "cache.json"
     old_cache = json.loads(cache_path.read_text(encoding="utf-8")) if cache_path.is_file() else {}
+    registry = load_registry(output)
     settings_key = json.dumps({k: getattr(args, k) for k in ("interval", "columns", "rows", "thumb_width", "detector", "threshold", "min_scene_len", "split_mode")}, sort_keys=True)
-    completed: dict[int, dict[str, Any]] = {}
+    completed: dict[str, dict[str, Any]] = {}
     pending = []
-    for index, source in enumerate(videos, 1):
-        key = str(source)
+    for source in videos:
         sig = fingerprint(source)
-        cached = old_cache.get(key)
-        source_json = output / "sources" / f"SRC{index:04d}" / "shots.json"
-        if not args.force and cached == {"fingerprint": sig, "settings": settings_key} and source_json.is_file():
-            completed[index] = json.loads(source_json.read_text(encoding="utf-8"))
-            print(f"[缓存] {source.name}")
+        source_id = assign_source_id(registry, sig)
+        source_json = output / "sources" / source_id / "shots.json"
+        if not args.force and old_cache.get(source_id) == {"fingerprint": sig, "settings": settings_key} and source_json.is_file():
+            payload = json.loads(source_json.read_text(encoding="utf-8"))
+            payload["source_path"] = str(source)  # footage folder may have moved
+            for shot in payload["shots"]:
+                shot["source_path"] = str(source)
+            completed[source_id] = payload
+            print(f"[缓存] {source.name} ({source_id})")
         else:
-            pending.append((index, source))
+            pending.append((source_id, source, sig))
+    (output / "source_registry.json").write_text(json.dumps(registry, indent=2), encoding="utf-8")
     with ThreadPoolExecutor(max_workers=max(1, args.workers)) as pool:
-        futures = {pool.submit(process_source, i, p, output, args, ffmpeg, ffprobe): (i, p) for i, p in pending}
+        futures = {pool.submit(process_source, i, p, output, args, ffmpeg, ffprobe, encoder, sig): (i, p)
+                   for i, p, sig in pending}
         for future in as_completed(futures):
-            index, source = futures[future]
-            completed[index] = future.result()
-            print(f"[完成] {source.name} -> {len(completed[index]['shots'])} shots")
+            source_id, source = futures[future]
+            completed[source_id] = future.result()
+            print(f"[完成] {source.name} ({source_id}) -> {len(completed[source_id]['shots'])} shots")
     sources = [completed[i] for i in sorted(completed)]
     write_outputs(output, root, sources, args)
-    new_cache = {str(v): {"fingerprint": completed[i]["fingerprint"], "settings": settings_key}
-                 for i, v in enumerate(videos, 1)}
+    new_cache = {sid: {"fingerprint": c["fingerprint"], "settings": settings_key} for sid, c in completed.items()}
     cache_path.write_text(json.dumps(new_cache, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"\n完成：{output / 'index.html'}")
     print(f"Codex入口：{output / 'CODEX_INDEX.md'}")

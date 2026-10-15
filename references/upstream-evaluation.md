@@ -24,3 +24,11 @@ Adopt only the smallest proven change. Copying a whole updated skill would erase
 - Security/compatibility boundary: apply requires an authorized Jianying host, runtime token, real draft/project/material identifiers and PC confirmation. Direct `lyra-cli` launch returned `unauthorized host process`. The interface is internal and undocumented, so version drift is a material regression risk.
 - Decision: adopt a version-gated Jianying editing mode and a conservative assembly patch compiler. Do not adopt direct draft JSON mutation, host bypass, automatic confirmation, guessed effect/resource ids, or unattended apply.
 - Package impact: version `1.3.0`; EDL v2 adds optional microsecond, record-position and track fields while retaining v1 compatibility.
+
+## DaVinci Resolve backend and macOS support evaluation — 1.4.0
+
+- Candidate: DaVinci Resolve timeline import (File > Import > Timeline) with FCPXML 1.9 and CMX3600 written by `scripts/edl_export.py`.
+- Observed behavior: structure validated by unit tests and XML well-formedness only. **Not yet imported into a real Resolve installation.** Public reports say Resolve's Python scripting API is Studio-only and was removed from the Free edition in 21.1, so the backend does not rely on it.
+- Decision: adopt as a manual-import backend; first use on a project requires a disposable 3–5 clip import test (source in/out, frame rate, media linking) recorded in `import_check.md`.
+- macOS: indexer, exporter, QC and compiler run on macOS by design but were developed and tested on Windows. The Jianying agent backend remains unverified on macOS (see `jianying.md`).
+- Package impact: version `1.4.0`; stable source registry replaces ordinal SRC ids; existing 1.3.0 indexes should be rebuilt with `--force` once.
